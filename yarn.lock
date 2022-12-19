@@ -6939,6 +6939,13 @@ quill-magic-url@^4.1.4:
     normalize-url "^4.5.1"
     quill-delta "^3.6.2"
 
+quill-mention@^3.1.0:
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/quill-mention/-/quill-mention-3.1.0.tgz#acf0bf21524b627e9304f63534e6d2b8c59ab4fd"
+  integrity sha512-uyjGK8QPJHEcjvNc3wUJy6a05Oiu+6JJ0N9SFAwjYHYThgMzlKucyD975fq28Mr1it8ZFRNiRMPa0sCiVOAEwA==
+  dependencies:
+    quill "^1.3.7"
+
 quill-to-plaintext@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/quill-to-plaintext/-/quill-to-plaintext-1.0.0.tgz#f01c04bc6c66d768ad1d1947bc1c6a32b41f9b16"

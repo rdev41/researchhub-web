@@ -30,6 +30,12 @@ import CreateBountyBtn from "../Bounty/CreateBountyBtn";
 import icons from "~/config/themes/icons";
 import { getCurrentUserLegacy } from "~/config/utils/user";
 
+// TEMP:
+const atValues = [
+  { id: 1, value: "Fredrik Sundqvist" },
+  { id: 2, value: "Patrik Sjölin" },
+];
+
 class Editor extends Component {
   constructor(props) {
     super(props);
@@ -52,9 +58,47 @@ class Editor extends Component {
     this.quillRef = null;
   }
 
+  /**
+   * Suggests other user accounts based on a given search term
+   * @param {string} searchTerm - Term to lookup
+   * @param {string} renderList - List to render
+   * @param {string} mentionChar - The triggering character (usually '@')
+   */
+  suggestMentions = async (searchTerm, renderList, mentionChar) => {
+    console.log("triggered suggested mentions");
+    let values = atValues;
+
+    // Render all values if nothing is typed (default state)
+    if (searchTerm.length === 0) {
+      renderList(values, searchTerm);
+    } else {
+      const matches = [];
+
+      // FIXME: need to optimize this
+      // Iterate through all the users, and lookup to see
+      // which ones match the given research term
+      for (i = 0; i < values.length; i++)
+        var matches = values[i].value
+          .toLowerCase()
+          .indexOf(searchTerm.toLowerCase());
+
+      if (~matches) {
+        matches.push(values[i]);
+      }
+      renderList(matches, searchTerm);
+    }
+  };
+
   componentDidMount = async () => {
     import("react-quill").then(async (val) => {
+      // Quill plugins require the document to be defined.
+      // We wait for the component to mount before importing react quill
+      // Then inside this async callback we perform the import
+      // and registration functions
       const MagicUrl = (await import("quill-magic-url")).default;
+      // FIXME: this causes the page to reload infinitely
+      const Mention = (await import("quill-mention")).default;
+      debugger;
 
       const Quill = val.default.Quill;
       var icons = val.default.Quill.import("ui/icons");
@@ -62,6 +106,7 @@ class Editor extends Component {
 
       Quill.register(QuillPeerReviewRatingBlock);
       Quill.register("modules/magicUrl", MagicUrl);
+      Quill.register("modules/mentions", Mention);
 
       this.setState(
         {
@@ -198,9 +243,13 @@ class Editor extends Component {
   onEditorChange = (value, delta, source, editor) => {
     this.attachQuillRefs();
     const editorContents = editor.getContents();
+
+    // Filter the editor contents for peer review rating
     const editorWithoutPeerReviewBlocks = editorContents.ops.filter(
       (op) => !op.insert["peer-review-rating"]
     );
+
+    // Retrieve the last change to editor contents
     const lastDelta =
       editorWithoutPeerReviewBlocks[editorWithoutPeerReviewBlocks.length - 1];
 
@@ -208,6 +257,7 @@ class Editor extends Component {
       editorWithoutPeerReviewBlocks.length === 1 &&
       lastDelta.insert === "\n" &&
       !lastDelta.attributes;
+
     if (editorHasTrivialText) {
       this.forcePlaceholderToShow({
         placeholderText: this.state.selectedPostTypeStruct.placeholder,
@@ -220,6 +270,8 @@ class Editor extends Component {
       this.setState({ submitDisabled: false });
     }
 
+    // Determine if there is a trigger
+    //
     if (this.props.editing) {
       return this.setState(
         {
@@ -326,6 +378,7 @@ class Editor extends Component {
 
   onSubmit = () => {
     const editor = this.reactQuillRef.current.getEditor();
+    console.log("Content was submitted");
     const content = editor.getContents();
     const plainText = editor.getText();
     this.setState({
@@ -585,6 +638,15 @@ class Editor extends Component {
     }
 
     if (canEdit) {
+      const mentionModule = {
+        allowedChars: /^[A-Za-z\s]*$/,
+        mentionDenotationChars: ["@"],
+        source: async function (searchTerm, renderList) {
+          const matchedPeople = await suggestMentions(searchTerm);
+          // renderList(matchedPeople);
+        },
+      };
+
       const modules = {
         magicUrl: true,
         keyboard: {
@@ -604,6 +666,7 @@ class Editor extends Component {
             image: this.imageHandler,
           },
         },
+        mention: mentionModule,
       };
 
       return (

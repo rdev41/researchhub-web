@@ -71,6 +71,7 @@
     "nuka-carousel": "^4.6.6",
     "numeral": "^2.0.6",
     "quill-magic-url": "^4.1.4",
+    "quill-mention": "^3.1.0",
     "quill-to-plaintext": "^1.0.0",
     "raw-loader": "^4.0.2",
     "react": "^18.2.0",
