@@ -58,37 +58,6 @@ class Editor extends Component {
     this.quillRef = null;
   }
 
-  /**
-   * Suggests other user accounts based on a given search term
-   * @param {string} searchTerm - Term to lookup
-   * @param {string} renderList - List to render
-   * @param {string} mentionChar - The triggering character (usually '@')
-   */
-  suggestMentions = async (searchTerm, renderList, mentionChar) => {
-    console.log("triggered suggested mentions");
-    let values = atValues;
-
-    // Render all values if nothing is typed (default state)
-    if (searchTerm.length === 0) {
-      renderList(values, searchTerm);
-    } else {
-      const matches = [];
-
-      // FIXME: need to optimize this
-      // Iterate through all the users, and lookup to see
-      // which ones match the given research term
-      for (i = 0; i < values.length; i++)
-        var matches = values[i].value
-          .toLowerCase()
-          .indexOf(searchTerm.toLowerCase());
-
-      if (~matches) {
-        matches.push(values[i]);
-      }
-      renderList(matches, searchTerm);
-    }
-  };
-
   componentDidMount = async () => {
     import("react-quill").then(async (val) => {
       // Quill plugins require the document to be defined.
@@ -96,9 +65,6 @@ class Editor extends Component {
       // Then inside this async callback we perform the import
       // and registration functions
       const MagicUrl = (await import("quill-magic-url")).default;
-      // FIXME: this causes the page to reload infinitely
-      const Mention = (await import("quill-mention")).default;
-      debugger;
 
       const Quill = val.default.Quill;
       var icons = val.default.Quill.import("ui/icons");
@@ -106,7 +72,6 @@ class Editor extends Component {
 
       Quill.register(QuillPeerReviewRatingBlock);
       Quill.register("modules/magicUrl", MagicUrl);
-      Quill.register("modules/mentions", Mention);
 
       this.setState(
         {
@@ -240,6 +205,33 @@ class Editor extends Component {
     return range ? [range.index, range.index + range.length].join(",") : "none";
   }
 
+  checkMention = (contents, last) => {
+    this.attachQuillRefs();
+    // At mention char
+    console.log("Check mention");
+    console.log("Last was ", last);
+    if (last.insert.trim() === "@") {
+      // Trigger dropdown
+      console.log("Should show dropdown");
+      let container = document.createElement("div");
+      let ul = document.createElement("ul");
+      container.append(ul);
+
+      let values = atValues;
+
+      for (let i = 0; i < values.length; i += 1) {
+        const li = document.createElement("li");
+        li.id = "quill-mention-item-" + i;
+        li.dataset.index = i;
+        li.innerHTML = `<div>Hi ${values[i]}</div>`;
+
+        ul.append(li);
+      }
+
+      this.quillRef.container.appendChild(container);
+    }
+  };
+
   onEditorChange = (value, delta, source, editor) => {
     this.attachQuillRefs();
     const editorContents = editor.getContents();
@@ -270,8 +262,8 @@ class Editor extends Component {
       this.setState({ submitDisabled: false });
     }
 
-    // Determine if there is a trigger
-    //
+    this.checkMention(editorContents, lastDelta);
+
     if (this.props.editing) {
       return this.setState(
         {
@@ -638,15 +630,6 @@ class Editor extends Component {
     }
 
     if (canEdit) {
-      const mentionModule = {
-        allowedChars: /^[A-Za-z\s]*$/,
-        mentionDenotationChars: ["@"],
-        source: async function (searchTerm, renderList) {
-          const matchedPeople = await suggestMentions(searchTerm);
-          // renderList(matchedPeople);
-        },
-      };
-
       const modules = {
         magicUrl: true,
         keyboard: {
@@ -666,7 +649,6 @@ class Editor extends Component {
             image: this.imageHandler,
           },
         },
-        mention: mentionModule,
       };
 
       return (
